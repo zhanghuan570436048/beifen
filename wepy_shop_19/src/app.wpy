@@ -1,0 +1,134 @@
+<style lang="less">
+@import "./static/styles/iconfont";
+page {
+  background-color: #f4f4f4;
+  font-size: 24rpx;
+  color: #333;
+}
+</style>
+
+<script>
+import wepy from 'wepy'
+import 'wepy-async-function'
+
+import { setStore } from 'wepy-redux'
+import configStore from './store'
+
+const store = configStore()
+setStore(store)
+
+import axios from 'axios'
+
+export default class extends wepy.app {
+  config = {
+    pages: ['pages/home', 'pages/category', 'pages/shopcart', 'pages/mine'],
+    window: {
+      backgroundTextStyle: 'light',
+      navigationBarBackgroundColor: '#ff2d4a',
+      navigationBarTitleText: '品优购',
+      navigationBarTextStyle: 'white'
+    },
+    tabBar: {
+      color: '#999999',
+      selectedColor: '#ff2d4a',
+      list: [
+        {
+          pagePath: 'pages/home',
+          text: '首页',
+          iconPath: './static/img/icon_home@3x.png',
+          selectedIconPath: './static/img/icon_home_active@3x.png'
+        },
+        {
+          pagePath: 'pages/category',
+          text: '分类',
+          iconPath: './static/img/icon_category@3x.png',
+          selectedIconPath: './static/img/icon_category_active@3x.png'
+        },
+        {
+          pagePath: 'pages/shopcart',
+          text: '购物车',
+          iconPath: './static/img/icon_cart@3x.png',
+          selectedIconPath: './static/img/icon_cart_active@3x.png'
+        },
+        {
+          pagePath: 'pages/mine',
+          text: '我的',
+          iconPath: './static/img/icon_me@3x.png',
+          selectedIconPath: './static/img/icon_me_active@3x.png'
+        }
+      ]
+    }
+  }
+
+  globalData = {
+    userInfo: null
+  }
+
+  constructor() {
+    super()
+    this.use('requestfix')
+  }
+
+  onLaunch() {
+    this.testAsync()
+
+     // 初始化axios
+    this._initAxios()
+  }
+
+  _initAxios() {
+    // 设置baseURL
+    axios.defaults.baseURL = 'https://www.zhengzhicheng.cn/'
+    // 更改axios的适配，替换掉底层实现
+    axios.defaults.adapter = function(config) {
+      wepy.showLoading({
+        title: '正在拼命加载中...', // 提示的内容,
+        mask: true // 显示透明蒙层，防止触摸穿透
+      })
+      return new Promise((resolve, reject) => {
+        wepy.request({
+          method: config.method === 'post' ? 'POST' : 'GET',
+          url: config.url,
+          data: config.params ? config.params : config.data,
+          header: config.headers,
+          success(res) {
+            resolve(res)
+          },
+          fail(err) {
+            reject(err)
+          },
+          complete() {
+            wepy.hideLoading()
+          }
+        })
+      })
+    }
+  }
+
+  sleep(s) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        resolve('promise resolved')
+      }, s * 1000)
+    })
+  }
+
+  async testAsync() {
+    const data = await this.sleep(3)
+    console.log(data)
+  }
+
+  getUserInfo(cb) {
+    const that = this
+    if (this.globalData.userInfo) {
+      return this.globalData.userInfo
+    }
+    wepy.getUserInfo({
+      success(res) {
+        that.globalData.userInfo = res.userInfo
+        cb && cb(res.userInfo)
+      }
+    })
+  }
+}
+</script>
